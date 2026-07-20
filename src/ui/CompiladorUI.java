@@ -8,6 +8,7 @@ import java.util.*;
 import java.util.List;
 import java.util.regex.*;
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumnModel;
@@ -36,14 +37,19 @@ public class CompiladorUI extends JFrame {
     private JTextPane txtEntrada;
     private JTextArea txtConsola;
     private JTextArea txtCodigoIntermedio;
+    private JTextField txtExpresionTresDirecciones;
     private JTable tblTokens;
     private JTable tblErroresLexicos;
     private JTable tblErroresSintacticos;
     private JTable tblErroresSemanticos;
+    private JTable tblTripletas;
+    private JTable tblCuadruplos;
     private DefaultTableModel modeloTablaTokens;
     private DefaultTableModel modeloErroresLexicos;
     private DefaultTableModel modeloErroresSintacticos;
     private DefaultTableModel modeloErroresSemanticos;
+    private DefaultTableModel modeloTripletas;
+    private DefaultTableModel modeloCuadruplos;
     private JTabbedPane panelLateral;
     private NodoArbol raizActual = null;
     private JButton btnAnalizar;
@@ -170,7 +176,21 @@ public class CompiladorUI extends JFrame {
             }
         });
         der.add(btnVerArbol);
+        JButton btnTripletas = crearBoton("Tripletas", new Color(70, 80, 95), new Color(100, 120, 160));
+        btnTripletas.addActionListener(e -> {
+            String tacActual = txtCodigoIntermedio != null ? txtCodigoIntermedio.getText() : "";
+            VentanaTripletasLyA2 ventana = new VentanaTripletasLyA2(tacActual);
+            ventana.setVisible(true);
+        });
+        der.add(btnTripletas);
 
+        JButton btnCuadruplos = crearBoton("Cuádruplos", new Color(70, 70, 90), new Color(120, 110, 180));
+        btnCuadruplos.addActionListener(e -> {
+            String tacActual = txtCodigoIntermedio != null ? txtCodigoIntermedio.getText() : "";
+            VentanaCuadruplosLyA2 ventana = new VentanaCuadruplosLyA2(tacActual);
+            ventana.setVisible(true);
+        });
+        der.add(btnCuadruplos);
         btnTema = new JToggleButton("\u263E");
         btnTema.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         btnTema.setForeground(TEXTO_SECUNDARIO);
@@ -389,6 +409,9 @@ public class CompiladorUI extends JFrame {
         txtCodigoIntermedio.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
         panelLateral.addTab("TAC", new JScrollPane(txtCodigoIntermedio));
 
+        // Pestaña: Generador de tres direcciones
+        panelLateral.addTab("Tres Direcciones", crearPanelTresDirecciones());
+
         // Pestaña: Referencia de Errores
         panelLateral.addTab("Ref. Errores", new PanelReferenciaErrores());
 
@@ -397,8 +420,122 @@ public class CompiladorUI extends JFrame {
         return panel;
     }
 
+    private JPanel crearPanelTresDirecciones() {
+        JPanel panel = new JPanel(new BorderLayout(8, 8));
+        panel.setBackground(FONDO_SECUNDARIO);
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        JPanel encabezado = new JPanel(new BorderLayout(8, 0));
+        encabezado.setBackground(FONDO_SECUNDARIO);
+
+        JLabel lblInfo = new JLabel("Usa el TAC generado (pestaña 'TAC') o pega el TAC aquí.");
+        lblInfo.setForeground(TEXTO_PRINCIPAL);
+        lblInfo.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        encabezado.add(lblInfo, BorderLayout.WEST);
+
+        JPanel acciones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        acciones.setBackground(FONDO_SECUNDARIO);
+
+        JButton btnLimpiarTres = crearBoton("Clean", new Color(80, 60, 60), new Color(180, 100, 100));
+        btnLimpiarTres.addActionListener(e -> limpiarTresDirecciones());
+        acciones.add(btnLimpiarTres);
+
+        JButton btnCargarDesdeTAC = crearBoton("Cargar desde TAC", new Color(70, 70, 90), ACENTO_TEAL);
+        btnCargarDesdeTAC.addActionListener(e -> {
+            String tac = txtCodigoIntermedio != null ? txtCodigoIntermedio.getText() : "";
+            if (tac == null || tac.trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "No hay TAC disponible en la pestaña TAC.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            List<String> lineas = java.util.Arrays.asList(tac.split("\\r?\\n"));
+            ParserTAC.ResultadoTAC res = new ParserTAC().parsear(lineas);
+            modeloTripletas.setRowCount(0);
+            for (ParserTAC.TripletaTAC t : res.getTripletas()) {
+                modeloTripletas.addRow(new Object[]{t.getIndice(), t.getOperador(), t.getOperando1(), t.getOperando2()});
+            }
+            modeloCuadruplos.setRowCount(0);
+            for (ParserTAC.CuadruploTAC c : res.getCuadruplos()) {
+                modeloCuadruplos.addRow(new Object[]{c.getOp(), c.getArg1(), c.getArg2(), c.getResultado()});
+            }
+        });
+        acciones.add(btnCargarDesdeTAC);
+
+        JButton btnGenerarTres = new JButton("Generar txt");
+        btnGenerarTres.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnGenerarTres.setForeground(Color.WHITE);
+        btnGenerarTres.setBackground(ACENTO_INDIGO);
+        btnGenerarTres.setOpaque(true);
+        btnGenerarTres.setBorderPainted(false);
+        btnGenerarTres.setFocusPainted(false);
+        btnGenerarTres.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btnGenerarTres.addActionListener(e -> {
+            String tac = txtCodigoIntermedio != null ? txtCodigoIntermedio.getText() : "";
+            if (tac == null || tac.trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "No hay TAC disponible en la pestaña TAC.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            List<String> lineas = java.util.Arrays.asList(tac.split("\\r?\\n"));
+            ParserTAC.ResultadoTAC res = new ParserTAC().parsear(lineas);
+            // exportar
+            JFileChooser chooser = new JFileChooser();
+            chooser.setDialogTitle("Guardar tripletas y cuádruplos");
+            chooser.setFileFilter(new FileNameExtensionFilter("Archivos de texto (*.txt)", "txt"));
+            chooser.setSelectedFile(new java.io.File("tres_direcciones.txt"));
+            if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+                java.io.File archivo = chooser.getSelectedFile();
+                if (!archivo.getName().toLowerCase().endsWith(".txt")) {
+                    archivo = new java.io.File(archivo.getParentFile(), archivo.getName() + ".txt");
+                }
+                try (PrintWriter writer = new PrintWriter(new java.io.FileWriter(archivo))) {
+                    writer.println("Tripletas:");
+                    for (ParserTAC.TripletaTAC t : res.getTripletas()) {
+                        writer.println(t.getIndice() + " | " + t.getOperando1() + " | " + t.getOperador() + " | " + t.getOperando2());
+                    }
+                    writer.println();
+                    writer.println("Cuádruplos:");
+                    for (ParserTAC.CuadruploTAC c : res.getCuadruplos()) {
+                        writer.println(c.getOp() + " | " + c.getArg1() + " | " + c.getArg2() + " | " + c.getResultado());
+                    }
+                } catch (java.io.IOException ex) {
+                    JOptionPane.showMessageDialog(this, "No se pudo exportar el archivo: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        acciones.add(btnGenerarTres);
+
+        encabezado.add(acciones, BorderLayout.EAST);
+        panel.add(encabezado, BorderLayout.NORTH);
+
+        JTabbedPane tabsTres = new JTabbedPane();
+        tabsTres.setBackground(FONDO_TERCIARIO);
+        tabsTres.setForeground(TEXTO_PRINCIPAL);
+
+        String[] colsTripletas = {"Índice", "Op", "Arg1", "Arg2"};
+        modeloTripletas = new DefaultTableModel(colsTripletas, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        tblTripletas = new JTable(modeloTripletas);
+        configurarTabla(tblTripletas);
+        tabsTres.addTab("Tripletas", new JScrollPane(tblTripletas));
+
+        String[] colsCuad = {"Op", "Arg1", "Arg2", "Resultado"};
+        modeloCuadruplos = new DefaultTableModel(colsCuad, 0) {
+            @Override public boolean isCellEditable(int r, int c) { return false; }
+        };
+        tblCuadruplos = new JTable(modeloCuadruplos);
+        configurarTabla(tblCuadruplos);
+        tabsTres.addTab("Cuádruplos", new JScrollPane(tblCuadruplos));
+
+        panel.add(tabsTres, BorderLayout.CENTER);
+        return panel;
+    }
+
+    private void limpiarTresDirecciones() {
+        if (modeloTripletas != null) modeloTripletas.setRowCount(0);
+        if (modeloCuadruplos != null) modeloCuadruplos.setRowCount(0);
+    }
+
     private void configurarTabla(JTable tabla) {
-        tabla.setBackground(FONDO_PRINCIPAL);
         tabla.setForeground(TEXTO_PRINCIPAL);
         tabla.setGridColor(COLOR_BORDE);
         tabla.setFont(new Font("JetBrains Mono", Font.PLAIN, 11));
@@ -631,6 +768,9 @@ public class CompiladorUI extends JFrame {
         modeloErroresSemanticos.setRowCount(0);
         txtConsola.setText("");
         txtCodigoIntermedio.setText("");
+        if (modeloTripletas != null) modeloTripletas.setRowCount(0);
+        if (modeloCuadruplos != null) modeloCuadruplos.setRowCount(0);
+        if (txtExpresionTresDirecciones != null) txtExpresionTresDirecciones.setText("");
         raizActual = null;
         btnVerArbol.setEnabled(false);
         clearSemanticHighlights();
