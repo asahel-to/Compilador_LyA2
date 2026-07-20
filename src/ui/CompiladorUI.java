@@ -35,6 +35,7 @@ public class CompiladorUI extends JFrame {
 
     private JTextPane txtEntrada;
     private JTextArea txtConsola;
+    private JTextArea txtCodigoIntermedio;
     private JTable tblTokens;
     private JTable tblErroresLexicos;
     private JTable tblErroresSintacticos;
@@ -379,6 +380,15 @@ public class CompiladorUI extends JFrame {
         txtConsola.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
         panelLateral.addTab("Consola", new JScrollPane(txtConsola));
 
+        // Pestaña: Código intermedio
+        txtCodigoIntermedio = new JTextArea();
+        txtCodigoIntermedio.setEditable(false);
+        txtCodigoIntermedio.setFont(new Font("JetBrains Mono", Font.PLAIN, 12));
+        txtCodigoIntermedio.setBackground(FONDO_PRINCIPAL);
+        txtCodigoIntermedio.setForeground(TEXTO_PRINCIPAL);
+        txtCodigoIntermedio.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
+        panelLateral.addTab("TAC", new JScrollPane(txtCodigoIntermedio));
+
         // Pestaña: Referencia de Errores
         panelLateral.addTab("Ref. Errores", new PanelReferenciaErrores());
 
@@ -573,6 +583,14 @@ public class CompiladorUI extends JFrame {
                 }
             }
 
+            String codigoIntermedio = "";
+            if (raizActual != null) {
+                codigoIntermedio = new GeneradorCodigoIntermedio().generar(raizActual);
+                txtCodigoIntermedio.setText(codigoIntermedio.isEmpty() ? "No hay código intermedio generado." : codigoIntermedio);
+            } else {
+                txtCodigoIntermedio.setText("" );
+            }
+
             if (contLex == 0 && contSin == 0 && contSem == 0) {
                 btnVerArbol.setEnabled(true);
             }
@@ -612,6 +630,7 @@ public class CompiladorUI extends JFrame {
         modeloErroresSintacticos.setRowCount(0);
         modeloErroresSemanticos.setRowCount(0);
         txtConsola.setText("");
+        txtCodigoIntermedio.setText("");
         raizActual = null;
         btnVerArbol.setEnabled(false);
         clearSemanticHighlights();
