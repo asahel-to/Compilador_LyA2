@@ -6,6 +6,7 @@
 
 scan "C:/Users/Ana/Descargas" as carpeta
 
+let archivo = 0
 for each archivo in carpeta {
     if archivo.ext == .pdf {
         move(archivo, "C:/Users/Ana/Documentos")

@@ -138,42 +138,42 @@ public class ValidationTests {
             "Redeclaracion de variable");
 
         // 3.2 Ambitos (scopes)
-        checkSemErrors("3.2a", "scan \"/path\" as files\nfor each x in files {\nlet inner = 1\n}\nlet x = inner\ndone()\n", 1,
+        checkSemErrors("3.2a", "scan \"/path\" as files\nlet x = 0\nfor each x in files {\nlet inner = 1\n}\nlet x2 = inner\ndone()\n", 1,
             "Variable de for no accesible fuera");
         checkSemErrors("3.2b", "scan \"/path\" as files\nif 1 == 1 {\nlet inner = 1\n}\nlet x = inner\ndone()\n", 1,
             "Variable de if no accesible fuera");
         checkSemErrors("3.2c", "scan \"/path\" as files\nif 1 == 1 {\nlet z = 1\n} else {\nlet b = 2\n}\nlet x = b\ndone()\n", 1,
             "Variable de else no accesible fuera");
-        checkSemErrors("3.2d", "scan \"/path\" as files\nlet outer = 1\nfor each item in files {\nlet x = outer\n}\ndone()\n", 0,
+        checkSemErrors("3.2d", "scan \"/path\" as files\nlet outer = 1\nlet item = 0\nfor each item in files {\nlet x = outer\n}\ndone()\n", 0,
             "Variable externa accesible dentro de for");
 
         // 3.3 Funciones: move (2 args path,path)
-        checkSemErrors("3.3a", "scan \"/path\" as files\nfor each x in files { move(x, \"/dest\") }\ndone()\n", 0,
+        checkSemErrors("3.3a", "scan \"/path\" as files\nlet x = 0\nfor each x in files { move(x, \"/dest\") }\ndone()\n", 0,
             "move: argumentos correctos");
         checkSemErrors("3.3b", "scan \"/path\" as files\nmove(files, \"/dest\", \"/x\")\ndone()\n", 1,
             "move: demasiados argumentos");
-        checkSemErrors("3.3c", "scan \"/path\" as files\nmove(123, \"/dest\")\ndone()\n", 1,
-            "move: tipo incorrecto primer arg");
+        checkSemErrors("3.3c", "scan \"/path\" as files\nlet tam = 100MB\nmove(tam, \"/dest\")\ndone()\n", 1,
+            "move: tipo incorrecto primer arg (number)");
 
         // 3.4 Funciones: copy (2 args path,path) — igual que move
-        checkSemErrors("3.4a", "scan \"/path\" as files\nfor each x in files { copy(x, \"/dest\") }\ndone()\n", 0,
+        checkSemErrors("3.4a", "scan \"/path\" as files\nlet x = 0\nfor each x in files { copy(x, \"/dest\") }\ndone()\n", 0,
             "copy: argumentos correctos");
-        checkSemErrors("3.4b", "scan \"/path\" as files\ncopy(123, \"/dest\")\ndone()\n", 1,
-            "copy: tipo incorrecto primer arg");
+        checkSemErrors("3.4b", "scan \"/path\" as files\nlet tam = 100MB\ncopy(tam, \"/dest\")\ndone()\n", 1,
+            "copy: tipo incorrecto primer arg (number)");
 
         // 3.5 Funciones: delete (1 arg path)
-        checkSemErrors("3.5a", "scan \"/path\" as files\nfor each x in files { delete(x) }\ndone()\n", 0,
+        checkSemErrors("3.5a", "scan \"/path\" as files\nlet x = 0\nfor each x in files { delete(x) }\ndone()\n", 0,
             "delete: argumento correcto");
-        checkSemErrors("3.5b", "scan \"/path\" as files\ndelete(123)\ndone()\n", 1,
-            "delete: tipo incorrecto arg");
+        checkSemErrors("3.5b", "scan \"/path\" as files\nlet tam = 100MB\ndelete(tam)\ndone()\n", 1,
+            "delete: tipo incorrecto arg (number)");
         checkSemErrors("3.5c", "scan \"/path\" as files\ndelete(files, \"/x\")\ndone()\n", 1,
             "delete: demasiados argumentos");
 
         // 3.6 Funciones: rename (2 args path,path)
-        checkSemErrors("3.6a", "scan \"/path\" as files\nfor each x in files { rename(x, \"/new\") }\ndone()\n", 0,
+        checkSemErrors("3.6a", "scan \"/path\" as files\nlet x = 0\nfor each x in files { rename(x, \"/new\") }\ndone()\n", 0,
             "rename: argumentos correctos");
-        checkSemErrors("3.6b", "scan \"/path\" as files\nrename(99, \"/new\")\ndone()\n", 1,
-            "rename: tipo incorrecto primer arg");
+        checkSemErrors("3.6b", "scan \"/path\" as files\nlet tam = 100MB\nrename(tam, \"/new\")\ndone()\n", 1,
+            "rename: tipo incorrecto primer arg (number)");
 
         // 3.7 Funciones: log (1-2 args any)
         checkSemErrors("3.7a", "scan \"/path\" as files\nlog(\"msg\")\ndone()\n", 0,
@@ -188,21 +188,27 @@ public class ValidationTests {
             "log: 3 argumentos (max 2)");
 
         // 3.8 Atributos de archivo
-        checkSemErrors("3.8a", "scan \"/path\" as files\nfor each x in files { let z = x.ext }\ndone()\n", 0,
+        checkSemErrors("3.8a", "scan \"/path\" as files\nlet x = 0\nfor each x in files { let z = x.ext }\ndone()\n", 0,
             "Atributo valido (ext)");
-        checkSemErrors("3.8b", "scan \"/path\" as files\nlet k = 123\nlet x = k.ext\ndone()\n", 1,
-            "Atributo sobre numero");
+        checkSemErrors("3.8b", "scan \"/path\" as files\nlet k = 100MB\nlet x = k.ext\ndone()\n", 1,
+            "Atributo sobre number");
         checkSemErrors("3.8c", "scan \"/path\" as files\nlet x = y.size\ndone()\n", 1,
             "Atributo sobre no declarado");
 
         // 3.9 For con fuente no declarada
-        checkSemErrors("3.9a", "scan \"/path\" as files\nfor each x in noExiste {}\ndone()\n", 1,
+        checkSemErrors("3.9a", "scan \"/path\" as files\nlet x = 0\nfor each x in noExiste {}\ndone()\n", 1,
             "Fuente de for no declarada");
 
+        // 3.11 Iterador int: errores de declaracion
+        checkSemErrors("3.11a", "scan \"/path\" as files\nfor each item in files { }\ndone()\n", 1,
+            "Iterador int sin let -> no declarado");
+        checkSemErrors("3.11b", "scan \"/path\" as files\nlet item = 0\nfor each item in files { }\ndone()\n", 0,
+            "Iterador int declarado con let -> OK");
+
         // 3.10 Case insensitive en funciones
-        checkSemErrors("3.10a", "scan \"/path\" as files\nfor each x in files { MOVE(x, \"/dest\") }\ndone()\n", 0,
+        checkSemErrors("3.10a", "scan \"/path\" as files\nlet x = 0\nfor each x in files { MOVE(x, \"/dest\") }\ndone()\n", 0,
             "MOVE en mayusculas funciona");
-        checkSemErrors("3.10b", "scan \"/path\" as files\nfor each x in files { DELETE(x) }\ndone()\n", 0,
+        checkSemErrors("3.10b", "scan \"/path\" as files\nlet x = 0\nfor each x in files { DELETE(x) }\ndone()\n", 0,
             "DELETE en mayusculas funciona");
 
         System.out.println();
@@ -218,6 +224,7 @@ public class ValidationTests {
         checkFullPipeline("4.1a",
             "scan \"C:/Users/Test\" as carpeta\n" +
             "let limite = 50MB\n" +
+            "let arch = 0\n" +
             "log(\"Iniciando...\")\n" +
             "for each arch in carpeta {\n" +
             "    if arch.ext == .pdf {\n" +
@@ -243,10 +250,11 @@ public class ValidationTests {
         // 4.3 Programa con operadores logicos
         checkFullPipeline("4.3a",
             "scan \"/path\" as x\n" +
-            "for each x in x {\n" +
-            "    if x.ext == .pdf || x.ext == .docx {\n" +
-            "        if x.size > 10MB && x.size < 100MB {\n" +
-            "            move(x, \"/dest\")\n" +
+            "let f = 0\n" +
+            "for each f in x {\n" +
+            "    if f.ext == .pdf || f.ext == .docx {\n" +
+            "        if f.size > 10MB && f.size < 100MB {\n" +
+            "            move(f, \"/dest\")\n" +
             "        }\n" +
             "    }\n" +
             "}\n" +
@@ -256,8 +264,9 @@ public class ValidationTests {
         // 4.4 Concatenacion de cadenas
         checkFullPipeline("4.4a",
             "scan \"/path\" as x\n" +
-            "for each x in x {\n" +
-            "    log(\"Archivo: \" + x.name)\n" +
+            "let f = 0\n" +
+            "for each f in x {\n" +
+            "    log(\"Archivo: \" + f.name)\n" +
             "}\n" +
             "done()\n",
             "Concatenacion de cadenas con +");
@@ -266,9 +275,10 @@ public class ValidationTests {
         checkFullPipeline("4.5a",
             "scan \"/path\" as x\n" +
             "let msg = \"inicio\"\n" +
+            "let f = 0\n" +
             "log(msg)\n" +
-            "for each x in x {\n" +
-            "    let msgLocal = x.name\n" +
+            "for each f in x {\n" +
+            "    let msgLocal = f.name\n" +
             "    log(msgLocal)\n" +
             "}\n" +
             "log(msg)\n" +

@@ -10,6 +10,7 @@ let rutaImagenes = "C:/Users/Ana/Imagenes"
 let rutaVideos = "C:/Users/Ana/Videos"
 let maxTamano = 200MB
 
+let foto = 0
 for each foto in fotos {
     if foto.ext == .jpg || foto.ext == .png {
         copy(foto, rutaImagenes)

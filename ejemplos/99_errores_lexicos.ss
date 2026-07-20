@@ -6,6 +6,7 @@
 // Error 1: Caracter @ no esta en el alfabeto
 scan "C:/test" as t
 
+let f = 0
 for each f in t {
     if f.ext == @pdf {
         move(f, "C:/destino")

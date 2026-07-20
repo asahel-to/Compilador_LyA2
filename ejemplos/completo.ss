@@ -10,6 +10,7 @@ let mensajeInicial = "Procesando archivos..."
 log(mensajeInicial)
 
 // 3. For each sobre la coleccion
+let item = 0
 for each item in escritorio {
     // 4. If/else if/else con operadores logicos
     if item.ext == .pdf || item.ext == .docx {

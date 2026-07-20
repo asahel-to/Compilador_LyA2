@@ -10,6 +10,7 @@ let media = "C:/Users/Ana/Multimedia"
 let backups = "C:/Users/Ana/Backups"
 let tamLimite = 10MB
 
+let item = 0
 log("Iniciando limpieza del escritorio...")
 
 for each item in escritorio {

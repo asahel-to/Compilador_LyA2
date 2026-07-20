@@ -5,6 +5,7 @@
 
 scan "C:/Users/Ana/Temp" as tmp
 
+let f = 0
 for each f in tmp {
     // Clasificar por extension
     if f.ext == .txt || f.ext == .docx {

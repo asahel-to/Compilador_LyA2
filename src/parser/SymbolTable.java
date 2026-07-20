@@ -73,16 +73,16 @@ public class SymbolTable {
 
     private void initBuiltins() {
         // known simple types
-        Collections.addAll(knownTypes, "path", "number", "string", "collection", "void", "unknown");
+        Collections.addAll(knownTypes, "path", "number", "string", "collection", "void", "unknown", "int");
 
         // move(src, dest) : void
-        registerSignature(new FunctionSignature("move", new String[]{"path","path"}, 2, 2, "void"));
+        registerSignature(new FunctionSignature("move", new String[]{"int","path"}, 2, 2, "void"));
         // copy(src, dest) : void
-        registerSignature(new FunctionSignature("copy", new String[]{"path","path"}, 2, 2, "void"));
+        registerSignature(new FunctionSignature("copy", new String[]{"int","path"}, 2, 2, "void"));
         // rename(src, dest) : void
-        registerSignature(new FunctionSignature("rename", new String[]{"path","path"}, 2, 2, "void"));
+        registerSignature(new FunctionSignature("rename", new String[]{"int","path"}, 2, 2, "void"));
         // delete(target) : void
-        registerSignature(new FunctionSignature("delete", new String[]{"path"}, 1, 1, "void"));
+        registerSignature(new FunctionSignature("delete", new String[]{"int"}, 1, 1, "void"));
         // log(x [, level]) : void  (flexible types)
         registerSignature(new FunctionSignature("log", null, 1, 2, "void"));
     }

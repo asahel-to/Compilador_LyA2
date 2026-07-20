@@ -5,6 +5,7 @@
 scan "C:/Users/Ana/Downloads" as downloads
 
 // Iterar sobre cada archivo en la carpeta
+let file = 0
 for each file in downloads {
     // Si es PDF, mover a Documentos
     if file.ext == .pdf {

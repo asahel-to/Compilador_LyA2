@@ -66,7 +66,7 @@ public class SemanticAnalyzer {
             errores.agregarError(TablaErrores.ERROR_ATRIBUTO_TIPO, linea, "Atributo inválido: '" + attrName + "'.");
             return;
         }
-        if (baseVal != null && baseVal.matches("\\d+(KB|MB|GB)?")) {
+        if (baseVal != null && baseVal.matches("\\d+(KB|MB|GB)")) {
             errores.agregarError(TablaErrores.ERROR_ATRIBUTO_TIPO, base.getLinea(),
                 "No se puede acceder al atributo '" + attrName + "' en un literal numérico.");
             return;
@@ -112,7 +112,8 @@ public class SemanticAnalyzer {
                     String inner = fv.substring(1, fv.length()-1);
                     if (inner.startsWith("/") || inner.startsWith(".") || inner.contains("/") || inner.contains("\\")) inferred = "path";
                     else inferred = "string";
-                } else if (fv != null && fv.matches("\\d+(KB|MB|GB)?")) inferred = "number";
+                } else if (fv != null && fv.matches("\\d+(KB|MB|GB)")) inferred = "number";
+                else if (fv != null && fv.matches("\\d+")) inferred = "int";
                 else if (fv != null && (fv.startsWith(".") || fv.startsWith("/") || fv.contains("/") || fv.contains("\\"))) inferred = "path";
                 else if (fv != null && esIdentificadorLexico(fv)) {
                     String t = symbols.getType(fv);
@@ -163,12 +164,15 @@ public class SemanticAnalyzer {
                         source.getLinea(), "Fuente del 'for each' debe ser tipo 'collection', pero '" + sourceName + "' es tipo '" + sourceType + "'.");
                 }
             }
-            // create inner scope for iterator and block
-            symbols.enterScope();
+            // iterator must be declared with let before for each
             NodoArbol iterator = ch.get(2);
             String itName = iterator.getValor();
-            // iterator is in a new scope — shadowing outer variables is allowed
-            symbols.declare(itName, iterator.getLinea());
+            if (!symbols.isDeclared(itName)) {
+                errores.agregarError(TablaErrores.ERROR_NO_DECLARADO, iterator.getLinea(),
+                    "Identificador '" + itName + "' no declarado antes de su uso en 'for each'.");
+            }
+            // create inner scope for block
+            symbols.enterScope();
             // visit block (6)
             visit(ch.get(6));
             symbols.exitScope();
@@ -277,7 +281,8 @@ public class SemanticAnalyzer {
             if (inner.startsWith("/") || inner.startsWith(".") || inner.contains("/") || inner.contains("\\")) return "path";
             return "string";
         }
-        if (fv.matches("\\d+(KB|MB|GB)?")) return "number";
+        if (fv.matches("\\d+(KB|MB|GB)")) return "number";
+        if (fv.matches("\\d+")) return "int";
         if (fv.startsWith(".") || fv.startsWith("/") || fv.contains("/") || fv.contains("\\")) return "path";
         if (esIdentificadorLexico(fv)) {
             String t = symbols.getType(fv);
