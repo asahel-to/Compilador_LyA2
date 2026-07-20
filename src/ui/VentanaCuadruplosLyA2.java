@@ -75,6 +75,22 @@ public class VentanaCuadruplosLyA2 extends JFrame {
         tabla.setSelectionForeground(new Color(240, 240, 255));
         tabla.setGridColor(new Color(48, 48, 64));
         tabla.setRowHeight(24);
+        tabla.setShowGrid(true);
+        tabla.setIntercellSpacing(new Dimension(1, 1));
+
+        tabla.getTableHeader().setBackground(new Color(38, 38, 52));
+        tabla.getTableHeader().setForeground(new Color(220, 220, 235));
+        tabla.getTableHeader().setFont(new Font("JetBrains Mono", Font.BOLD, 12));
+        tabla.getTableHeader().setBorder(BorderFactory.createLineBorder(new Color(48, 48, 64)));
+
+        javax.swing.table.DefaultTableCellRenderer renderer = new javax.swing.table.DefaultTableCellRenderer();
+        renderer.setBackground(new Color(28, 28, 34));
+        renderer.setForeground(new Color(220, 220, 235));
+        renderer.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+        for (int i = 0; i < modelo.getColumnCount(); i++) {
+            tabla.getColumnModel().getColumn(i).setCellRenderer(renderer);
+        }
+
         add(new JScrollPane(tabla), BorderLayout.CENTER);
     }
 

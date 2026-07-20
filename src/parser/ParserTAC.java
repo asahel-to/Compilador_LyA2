@@ -70,33 +70,48 @@ public class ParserTAC {
     public ResultadoTAC parsear(List<String> lineas) {
         List<TripletaTAC> tripletas = new ArrayList<>();
         List<CuadruploTAC> cuadruplos = new ArrayList<>();
-        Map<String, String> referenciaIndices = new HashMap<>();
+        Map<String, String> referenciaNumerica = new HashMap<>();
+        Map<String, String> referenciaTemporal = new HashMap<>();
 
+        // Primera pasada: parsear sin reemplazo y construir mapas de referencia
+        List<InstruccionTAC> instrucciones = new ArrayList<>();
         int instruccionNumero = 1;
         for (String linea : lineas) {
             String texto = linea == null ? "" : linea.trim();
-            if (texto.isEmpty()) continue; // Skip empty lines
+            if (texto.isEmpty()) continue;
 
-            InstruccionTAC instruccion = parseLinea(texto, instruccionNumero, referenciaIndices);
+            InstruccionTAC instruccion = parseLineaRaw(texto);
             if (instruccion == null) continue;
 
             if (instruccion.resultado != null && !instruccion.resultado.isEmpty() && esTemporal(instruccion.resultado)) {
-                referenciaIndices.put(instruccion.resultado, String.valueOf(instruccionNumero));
+                referenciaNumerica.put(instruccion.resultado, String.valueOf(instruccionNumero));
+                referenciaTemporal.put(instruccion.resultado, "t" + instruccionNumero);
             }
 
+            instrucciones.add(instruccion);
+            instruccionNumero++;
+        }
+
+        // Segunda pasada: generar tripletas (con indices numericos) y cuadruplos (con t<n>)
+        for (int i = 0; i < instrucciones.size(); i++) {
+            InstruccionTAC inst = instrucciones.get(i);
+            String numStr = String.valueOf(i + 1);
+
+            // Tripletas: usar indices numericos
             tripletas.add(new TripletaTAC(
-                String.valueOf(instruccionNumero),
-                instruccion.arg1,
-                instruccion.op,
-                instruccion.arg2
+                numStr,
+                reemplazarReferenciaSiCorresponde(inst.arg1, referenciaNumerica),
+                inst.op,
+                reemplazarReferenciaSiCorresponde(inst.arg2, referenciaNumerica)
             ));
+
+            // Cuadruplos: usar formato t<n>
             cuadruplos.add(new CuadruploTAC(
-                instruccion.op,
-                instruccion.arg1,
-                instruccion.arg2,
-                instruccion.resultado // Add the result to the quadruple
+                inst.op,
+                reemplazarReferenciaSiCorresponde(inst.arg1, referenciaTemporal),
+                reemplazarReferenciaSiCorresponde(inst.arg2, referenciaTemporal),
+                inst.resultado
             ));
-            instruccionNumero++; // Increment instruction number
         }
 
         return new ResultadoTAC(tripletas, cuadruplos);
@@ -118,11 +133,11 @@ public class ParserTAC {
         }
     }
 
-    private InstruccionTAC parseLinea(String texto, int numeroInstruccion, Map<String, String> referenciaIndices) {
+    private InstruccionTAC parseLineaRaw(String texto) {
         Matcher mLabel = P_LABEL.matcher(texto);
         if (mLabel.matches()) {
             return new InstruccionTAC(
-                String.valueOf(numeroInstruccion),
+                "",
                 "LABEL",
                 "",
                 "",
@@ -133,9 +148,9 @@ public class ParserTAC {
         Matcher mIf = P_IF_FALSE.matcher(texto);
         if (mIf.matches()) {
             return new InstruccionTAC(
-                String.valueOf(numeroInstruccion),
+                "",
                 "IF_FALSE",
-                reemplazarReferenciaSiCorresponde(mIf.group(1), referenciaIndices),
+                mIf.group(1).trim(),
                 "",
                 mIf.group(2)
             );
@@ -144,7 +159,7 @@ public class ParserTAC {
         Matcher mGoto = P_GOTO.matcher(texto);
         if (mGoto.matches()) {
             return new InstruccionTAC(
-                String.valueOf(numeroInstruccion),
+                "",
                 "GOTO",
                 "",
                 "",
@@ -157,11 +172,8 @@ public class ParserTAC {
             if (mCall.matches()) {
                 String nombre = mCall.group(1);
                 String args = mCall.group(2) == null ? "" : mCall.group(2).trim();
-                if (esValorSimple(args) && referenciaIndices.containsKey(args)) {
-                    args = referenciaIndices.get(args);
-                }
                 return new InstruccionTAC(
-                    String.valueOf(numeroInstruccion),
+                    "",
                     "CALL",
                     nombre,
                     args,
@@ -181,9 +193,6 @@ public class ParserTAC {
                 if (mCall.matches()) {
                     String nombre = mCall.group(1);
                     String args = mCall.group(2) == null ? "" : mCall.group(2).trim();
-                    if (esValorSimple(args) && referenciaIndices.containsKey(args)) {
-                        args = referenciaIndices.get(args);
-                    }
                     return new InstruccionTAC(destino, "CALL", nombre, args, destino);
                 }
             }
@@ -194,7 +203,6 @@ public class ParserTAC {
             }
 
             if (esValorSimple(resto)) {
-                resto = reemplazarReferenciaSiCorresponde(resto, referenciaIndices);
                 return new InstruccionTAC(destino, "=", resto, "", destino);
             }
 
@@ -202,13 +210,13 @@ public class ParserTAC {
             if (!"=".equals(operador)) {
                 int idx = buscarIndiceOperador(resto, operador);
                 if (idx >= 0) {
-                    String left = reemplazarReferenciaSiCorresponde(resto.substring(0, idx).trim(), referenciaIndices);
-                    String right = reemplazarReferenciaSiCorresponde(resto.substring(idx + operador.length()).trim(), referenciaIndices);
+                    String left = resto.substring(0, idx).trim();
+                    String right = resto.substring(idx + operador.length()).trim();
                     return new InstruccionTAC(destino, operador, left, right, destino);
                 }
             }
 
-            return new InstruccionTAC(destino, "=", reemplazarReferenciaSiCorresponde(resto, referenciaIndices), "", destino);
+            return new InstruccionTAC(destino, "=", resto, "", destino);
         }
 
         return null;

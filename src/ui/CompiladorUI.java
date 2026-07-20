@@ -176,21 +176,21 @@ public class CompiladorUI extends JFrame {
             }
         });
         der.add(btnVerArbol);
-        JButton btnTripletas = crearBoton("Tripletas", new Color(70, 80, 95), new Color(100, 120, 160));
-        btnTripletas.addActionListener(e -> {
-            String tacActual = txtCodigoIntermedio != null ? txtCodigoIntermedio.getText() : "";
-            VentanaTripletasLyA2 ventana = new VentanaTripletasLyA2(tacActual);
-            ventana.setVisible(true);
-        });
-        der.add(btnTripletas);
+        // JButton btnTripletas = crearBoton("Tripletas", new Color(70, 80, 95), new Color(100, 120, 160));
+        // btnTripletas.addActionListener(e -> {
+        //     String tacActual = txtCodigoIntermedio != null ? txtCodigoIntermedio.getText() : "";
+        //     VentanaTripletasLyA2 ventana = new VentanaTripletasLyA2(tacActual);
+        //     ventana.setVisible(true);
+        // });
+        //der.add(btnTripletas);
 
-        JButton btnCuadruplos = crearBoton("Cuádruplos", new Color(70, 70, 90), new Color(120, 110, 180));
-        btnCuadruplos.addActionListener(e -> {
-            String tacActual = txtCodigoIntermedio != null ? txtCodigoIntermedio.getText() : "";
-            VentanaCuadruplosLyA2 ventana = new VentanaCuadruplosLyA2(tacActual);
-            ventana.setVisible(true);
-        });
-        der.add(btnCuadruplos);
+        // JButton btnCuadruplos = crearBoton("Cuádruplos", new Color(70, 70, 90), new Color(120, 110, 180));
+        // btnCuadruplos.addActionListener(e -> {
+        //     String tacActual = txtCodigoIntermedio != null ? txtCodigoIntermedio.getText() : "";
+        //     VentanaCuadruplosLyA2 ventana = new VentanaCuadruplosLyA2(tacActual);
+        //     ventana.setVisible(true);
+        // });
+        // der.add(btnCuadruplos);
         btnTema = new JToggleButton("\u263E");
         btnTema.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         btnTema.setForeground(TEXTO_SECUNDARIO);
@@ -536,6 +536,7 @@ public class CompiladorUI extends JFrame {
     }
 
     private void configurarTabla(JTable tabla) {
+        tabla.setBackground(FONDO_PRINCIPAL);
         tabla.setForeground(TEXTO_PRINCIPAL);
         tabla.setGridColor(COLOR_BORDE);
         tabla.setFont(new Font("JetBrains Mono", Font.PLAIN, 11));
@@ -552,6 +553,22 @@ public class CompiladorUI extends JFrame {
         hdr.setForeground(ACENTO_AMBER);
         hdr.setFont(new Font("Segoe UI", Font.BOLD, 10));
         hdr.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, COLOR_BORDE));
+
+        tabla.setDefaultRenderer(Object.class, new javax.swing.table.DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                if (!isSelected) {
+                    setBackground(row % 2 == 0 ? FILA_PAR : FILA_IMPAR);
+                    setForeground(TEXTO_PRINCIPAL);
+                } else {
+                    setBackground(new Color(60, 60, 90));
+                    setForeground(Color.WHITE);
+                }
+                return this;
+            }
+        });
     }
 
     private void configurarColsError(JTable tabla) {

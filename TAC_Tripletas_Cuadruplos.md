@@ -19,15 +19,29 @@ En este proyecto, el compilador genera TAC desde el AST de SortScript y luego pe
 
 ### `src/parser/ParserTAC.java`
 
-El parser centraliza el análisis de cada línea TAC en una sola función:
-- `parseLinea(String texto, int numeroInstruccion)`
+El parser usa un enfoque de **dos pasadas**:
 
-Esa función devuelve un objeto interno:
-- `InstruccionTAC { indice, op, arg1, arg2, resultado }`
+#### Primera pasada: parseo sin reemplazo
+- `parseLineaRaw(String texto)` analiza cada línea TAC y devuelve un `InstruccionTAC` con los nombres originales de las variables y temporales (por ejemplo, `t1`, `t2`, `a`, `b`).
+- Se construyen dos mapas de referencia:
+  - `referenciaNumerica`: `"t1"` → `"1"` (índice numérico de la instrucción)
+  - `referenciaTemporal`: `"t1"` → `"t1"` (formato `t<n>` para cuádruplos)
 
-A partir de esa lista única de instrucciones, se construyen las dos vistas:
-- `TripletaTAC`: usada para las tripletas
-- `CuadruploTAC`: usada para los cuadruplos
+#### Segunda pasada: generación de tripletas y cuádruplos
+- Se itera sobre la lista de instrucciones parseadas y se generan **tripletas y cuádruplos de forma independiente**:
+  - **Tripletas**: los operandos que son temporales (como `t1`) se reemplazan por su **índice numérico** de instrucción (por ejemplo, `"1"`).
+  - **Cuádruplos**: los operandos que son temporales se reemplazan por su nombre temporal con formato `t<n>` (por ejemplo, `"t1"`).
+
+### Flujo del parseo
+
+```
+Línea TAC original:     t2 = t1 * c
+                            ↓ parseLineaRaw
+InstruccionTAC:         op="*", arg1="t1", arg2="c", resultado="t2"
+                            ↓ segunda pasada
+Tripleta:               índice=2, op="*", arg1="1", arg2="c"
+Cuádruplo:              op="*", arg1="t1", arg2="c", resultado="t2"
+```
 
 ### Correciones importantes implementadas
 
@@ -43,12 +57,15 @@ A partir de esa lista única de instrucciones, se construyen las dos vistas:
 
    De esta forma no se trata `goto` como una instrucción separada.
 
-3. Las tripletas usan ahora el mismo orden de columnas que los cuadruplos:
+3. Las tripletas usan el mismo orden de columnas:
    - `Índice`, `Op`, `Arg1`, `Arg2`
 
-   Esto unifica la forma en que se representa cualquier instrucción, incluyendo asignaciones simples.
+4. Los cuádruplos usan el formato:
+   - `Op`, `Arg1`, `Arg2`, `Resultado`
 
-4. El parser devuelve una sola lista de instrucciones estructuradas. Las tablas de tripletas y cuadruplos consumen esa lista en lugar de parsear de forma independiente.
+5. Los operandos temporales se representan de forma diferente según la vista:
+   - En **tripletas**: se usan **índices numéricos** para referenciar resultados anteriores (por ejemplo, `"1"` en vez de `"t1"`).
+   - En **cuádruplos**: se usan **nombres temporales** con formato `t<n>` (por ejemplo, `"t1"`, `"t2"`).
 
 ## 3. Tripletas vs Cuádruplos
 
@@ -60,12 +77,20 @@ En esta interfaz se muestra cada instrucción con columnas:
 - `Arg1`
 - `Arg2`
 
-Ejemplo para `tamLimite = 50MB`:
+Los operandos que son resultados de instrucciones anteriores se muestran como su **índice numérico**.
 
-- Índice: `1`
-- Op: `=` 
-- Arg1: `50MB`
-- Arg2: ``
+Ejemplo con:
+```
+t1 = a + b
+t2 = t1 * c
+x = t2
+```
+
+| Índice | Op  | Arg1 | Arg2 |
+|--------|-----|------|------|
+| 1      | +   | a    | b    |
+| 2      | *   | 1    | c    |
+| 3      | =   | 2    |      |
 
 ### Cuádruplos
 
@@ -75,12 +100,15 @@ Aquí se representa la misma instrucción con columnas:
 - `Arg2`
 - `Resultado`
 
-Ejemplo para `tamLimite = 50MB`:
+Los operandos que son resultados de instrucciones anteriores se muestran como **temporales** (`t<n>`).
 
-- Op: `=` 
-- Arg1: `50MB`
-- Arg2: ``
-- Resultado: `tamLimite`
+Ejemplo con las mismas instrucciones:
+
+| Op  | Arg1 | Arg2 | Resultado |
+|-----|------|------|-----------|
+| +   | a    | b    | t1        |
+| *   | t1   | c    | t2        |
+| =   | t2   |      | x         |
 
 ## 4. Componentes de UI
 
@@ -92,13 +120,13 @@ Ejemplo para `tamLimite = 50MB`:
 
 ### `src/ui/VentanaTripletasLyA2.java`
 
-- Muestra una tabla de tripletas.
+- Muestra una tabla de tripletas con colores oscuros forzados (renderer explícito).
 - Carga TAC inicial desde `tacInicial`.
 - Invoca `ParserTAC.parsear(...)` una sola vez.
 
 ### `src/ui/VentanaCuadruplosLyA2.java`
 
-- Muestra una tabla de cuadruplos.
+- Muestra una tabla de cuadruplos con colores oscuros forzados (renderer explícito).
 - También invoca `ParserTAC.parsear(...)` una sola vez.
 
 ## 5. Recomendación de uso
@@ -110,8 +138,10 @@ Ejemplo para `tamLimite = 50MB`:
 
 ## 6. Beneficios de esta implementación
 
-- El parser es único y determinista.
-- Evita discrepancias entre tripletas y cuadruplos.
+- El parser es único y determinista con enfoque de dos pasadas.
+- Tripletas y cuádruplos generan sus referencias de forma independiente.
+- Las tripletas usan índices numéricos para referenciar resultados anteriores (más compacto).
+- Los cuádruplos usan nombres temporales `t<n>` para mayor legibilidad.
 - Mantiene los literales de cadena intactos.
 - Hace que las instrucciones `call` sin retorno sean consistentes.
 - Simplifica la depuración y el mantenimiento.
